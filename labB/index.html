@@ -1,10 +1,23 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <script src="./todo-list.js"></script>
 </head>
 <body>
-$END$
+<!--item musi byc edytowalny-->
+<!--jak wyszukujesz to musi sie podswietlic - jest jakas metoda mark czy cos-->
+<!--zapisac do local storage-->
+<!--todo mozna by było zrobić init calej tej struktury w js-->
+<div id="todo-list">
+    <input type="search" id="search" name="search">
+    <div id="tasks">
+    </div>
+    <input type="text" id="task" name="task">
+    <input type="date" id="deadline" name="deadline">
+    <button onclick="todoList.addTask()">Zapisz</button>
+</div>
+
 </body>
 </html>
