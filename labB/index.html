@@ -4,19 +4,21 @@
     <meta charset="UTF-8">
     <title>Title</title>
     <script src="./todo-list.js"></script>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<!--item musi byc edytowalny-->
-<!--jak wyszukujesz to musi sie podswietlic - jest jakas metoda mark czy cos-->
-<!--zapisac do local storage-->
 <!--todo mozna by było zrobić init calej tej struktury w js-->
 <div id="todo-list">
+    <span id="warning" class="message" style="display:none">NOBODY SHOULD SEE THAT</span>
     <input type="search" id="search" name="search">
     <div id="tasks">
     </div>
+    <div class="add-task-form">
     <input type="text" id="task" name="task">
     <input type="date" id="deadline" name="deadline">
-    <button onclick="todoList.addTask()">Zapisz</button>
+<!--    todo zrob onsubmit i e.stopPropagation()-->
+    <button class="btn-submit" onclick="todoList.addTask()">Zapisz</button>
+    </div>
 </div>
 
 </body>
