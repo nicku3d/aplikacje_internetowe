@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="leaflet-1.7.1/leaflet.css" />
+    <script src="leaflet-1.7.1/leaflet-src.js"></script>
+    <script src="leaflet-1.7.1/leaflet-providers.js"></script>
+    <script src="leaflet-1.7.1/leaflet-image.js"></script>
+<!--    <script src="./script.js"></script>-->
+    <style>
+        #positionInfo {
+            display: flex;
+            flex-direction: column;
+            justify-content: start;
+            align-items: start;
+        }
+        #map {
+            width: 600px;
+            height: 300px;
+            border: 1px solid black;
+        }
+
+        #rasterMap {
+            width: 600px;
+            height: 300px;
+            border: 1px solid black;
+        }
+        .container {
+            display: flex;
+            flex-direction: row;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+        #tileContainer {
+            max-width: 1200px;
+            display: flex;
+            flex-direction: row;
+            justify-content: start;
+            align-items: start;
+            flex-wrap: wrap;
+        }
+        .tile {
+            width: 150px;
+            height: 75px;
+            border: 1px solid black;
+        }
+        .dragging {
+            opacity: 0.5;
+            border: 2px dashed #000;
+        }
+    </style>
+</head>
+<body>
+<button id="getLocation">Get current location</button>
+<button id="saveButton">Save map</button>
+<div id="positionInfo">
+    <div class="container">
+    <div id="map"></div>
+    <div>
+    <canvas id="rasterMap" width="600" height="300"></canvas>
+    </div>
+    </div>
+    <div id="tileContainer"></div>
+</div>
+<script>
+    let correctlyPlacedTiles = 0;
+    const cols = 4;
+    const rows = 4;
+    const tilesAmount = rows*cols;
+    const tileWidth = 150;
+    const tileHeight = 75;
+    const tiles = [];
+    const map = L.map('map').setView([53.430127, 14.564802], 18);
+    L.tileLayer.provider('Esri.WorldImagery').addTo(map);
+
+    const rasterMap = document.getElementById("rasterMap");
+    const rasterMapContext = rasterMap.getContext('2d');
+    rasterMap.addEventListener("dragover", function (event) {
+        event.preventDefault();
+    });
+
+    rasterMap.addEventListener("drop", function (event) {
+        let draggedTile = document.querySelector("#" + event.dataTransfer.getData('text'));
+        const x = event.offsetX;
+        const y = event.offsetY;
+        const col = Math.max(0, Math.min(cols-1, Math.floor(x / tileWidth)));
+        const row = Math.max(0, Math.min(rows-1, Math.floor(y / tileHeight)));
+        draggedTile.dataset.currentCol = col;
+        draggedTile.dataset.currentRow = row;
+        rasterMapContext.drawImage(draggedTile,
+            0, 0, tileWidth, tileHeight,
+            col * tileWidth, row * tileHeight, tileWidth, tileHeight)
+        // draggedTile.style.position = 'absolute';
+        // draggedTile.draggable = true;
+        // draggedTile.style.left = (col * tileWidth) + 'px';
+        // draggedTile.style.top  = (row * tileHeight) + 'px';
+        rasterMap.appendChild(draggedTile);
+        if (draggedTile.dataset.currentCol == draggedTile.dataset.correctCol
+            && draggedTile.dataset.currentRow == draggedTile.dataset.correctRow) {
+            correctlyPlacedTiles++;
+            console.log('correct place');
+        } else {
+            console.log('wrong place');
+        }
+        if (correctlyPlacedTiles === tilesAmount) {
+            showWinNotification();
+        }
+    }, false);
+
+    document.getElementById("saveButton").addEventListener("click", function() {
+        leafletImage(map, function(err, canvas) {
+            const tileContainer = document.getElementById('tileContainer');
+            const rasterMap = document.getElementById("rasterMap");
+            const rasterContext = rasterMap.getContext("2d");
+            drawPuzzleBackground(rasterContext, 600, 300);
+            for (let row = 0; row < rows; row++) {
+                for (let col = 0; col < cols; col++) {
+                    const newTile = document.createElement('canvas');
+                    newTile.className = 'tile';
+                    newTile.width = tileWidth;
+                    newTile.height = tileHeight;
+                    newTile.draggable = true;
+                    newTile.id = 'tile' + row + col;
+                    newTile.dataset.correctRow = row;
+                    newTile.dataset.correctCol = col;
+                    newTile.dataset.currentRow = -1;
+                    newTile.dataset.currentCol = -1;
+                    newTile.addEventListener("dragstart", function(event) {
+                        newTile.classList.add('dragging');
+                        event.dataTransfer.setData("text", this.id);
+                    });
+
+                    newTile.addEventListener("dragend", function(event) {
+                        newTile.classList.remove('dragging');
+                    });
+
+                    const tileContext = newTile.getContext('2d');
+                    tileContext.drawImage(canvas,
+                        col * tileWidth, row * tileHeight, tileWidth, tileHeight,
+                        0, 0, tileWidth, tileHeight)
+                    tileContainer.append(newTile);
+                }
+            }
+        });
+    });
+
+    document.getElementById("getLocation").addEventListener("click", function(event) {
+        if (! navigator.geolocation) {
+            console.log("No geolocation.");
+        }
+
+        navigator.geolocation.getCurrentPosition(position => {
+            console.log(position);
+            let lat = position.coords.latitude;
+            let lon = position.coords.longitude;
+
+            map.setView([lat, lon]);
+        }, positionError => {
+            console.error(positionError);
+        });
+    });
+
+    function drawPuzzleBackground(context, width, height) {
+        context.fillStyle = '#8D3E3AFF';
+        context.fillRect(0, 0, width, height);
+
+        context.strokeStyle = 'black';
+        context.lineWidth = 2;
+
+        for (let c = 1; c < cols; c++) {
+            const x = Math.round((c * width) / cols) + 0.5;
+            context.beginPath();
+            context.moveTo(x, 0);
+            context.lineTo(x, height);
+            context.stroke();
+        }
+
+        for (let r = 1; r < rows; r++) {
+            const y = Math.round((r * height) / rows) + 0.5;
+            context.beginPath();
+            context.moveTo(0, y);
+            context.lineTo(width, y);
+            context.stroke();
+        }
+
+        context.strokeRect(0.5, 0.5, width - 1, height - 1);
+    }
+
+    function showWinNotification() {
+        console.log('MEGA BIG WIN!!!');
+        if (Notification.permission === 'granted') {
+            new Notification('MEGA BIG WIN!!!');
+        } else if (Notification.permission !== 'denied') {
+            Notification.requestPermission().then(p => {
+                if (p === 'granted') new Notification('MEGA BIG WIN!!!');
+            });
+        }
+    }
+</script>
+</body>
+</html>
